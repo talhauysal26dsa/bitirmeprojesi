@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+
+# YOLOv8 Training outputs
+runs/
+wandb/
+
+# Dataset (too large for git)
+datasets/
+unified_dataset/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model weights (too large)
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.cache
+.cache/

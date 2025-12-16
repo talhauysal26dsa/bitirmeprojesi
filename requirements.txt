@@ -1,0 +1,35 @@
+# YOLOv8 Training - Requirements (Optimized for 80GB VRAM)
+# Python 3.10+ required
+
+# Core deep learning - Latest versions for best performance
+ultralytics>=8.3.0
+torch>=2.3.0
+torchvision>=0.18.0
+
+# Computer vision
+opencv-python>=4.10.0
+opencv-contrib-python>=4.10.0
+
+# Data processing  
+numpy>=1.26.0
+pandas>=2.2.0
+pillow>=10.4.0
+
+# Configuration
+pyyaml>=6.0.1
+
+# Visualization & monitoring
+matplotlib>=3.9.0
+seaborn>=0.13.0
+tensorboard>=2.17.0
+
+# Progress bars
+tqdm>=4.66.0
+
+# Utilities
+pathlib>=1.0.1
+
+# Performance optimizations
+albumentations>=1.4.0  # Advanced augmentations
+ninja>=1.11.1  # Faster CUDA compilation
+psutil>=6.0.0  # System monitoring

@@ -1,0 +1,9 @@
+names:
+  0: Airplane
+  1: Bird
+  2: Drone
+  3: Helicopter
+path: /home/talha/bitirmeprojesi/unified_dataset
+test: test
+train: train
+val: val
