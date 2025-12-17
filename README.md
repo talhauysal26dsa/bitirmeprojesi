@@ -361,6 +361,26 @@ result = get_sliced_prediction(
 - Small object mAP: +15-20%
 - Uzak mesafe detection: +25%
 
+
+Yapılması Gerekenler (Sıralı)
+Faz 1: Hazırlık
+✅ P2H eğitiminin bitmesini bekle
+⏳ SAHI kütüphanesini kur
+⏳ Test görüntüleri hazırla (özellikle küçük nesneli)
+Faz 2: Script Geliştirme
+⏳ Baseline + SAHI script'i yaz
+⏳ P2H + SAHI script'i yaz
+⏳ Karşılaştırma script'i yaz
+Faz 3: Parametre Optimizasyonu
+⏳ Slice size deneme (256, 512, 640, 896)
+⏳ Overlap ratio deneme (0.1, 0.2, 0.3)
+⏳ Confidence threshold deneme
+Faz 4: Değerlendirme
+⏳ Test set üzerinde tüm kombinasyonları çalıştır
+⏳ mAP skorlarını karşılaştır
+⏳ Inference time'ı ölç
+⏳ En iyi konfigürasyonu belirle
+
 ### 3. Super Resolution (SR)
 
 **Amaç:** Düşük çözünürlüklü görüntüleri yükseltmek

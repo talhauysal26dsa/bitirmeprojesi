@@ -10,8 +10,8 @@ from collections import defaultdict
 import yaml
 
 # Dataset configuration
-DATASETS_ROOT = '/home/talha/bitirmeprojesi/datasets'
-OUTPUT_ROOT = '/home/talha/bitirmeprojesi/unified_dataset'
+DATASETS_ROOT = '/home/ilaha/bitirmeprojesi/datasets'
+OUTPUT_ROOT = '/home/ilaha/bitirmeprojesi/unified_dataset'
 
 # RGB datasets to merge
 RGB_DATASETS = [

@@ -1,6 +1,7 @@
 """
 YOLOv8 Training Script with Weighted Loss
 Baseline training for unified RGB + Thermal dataset
+Supports P2 head for improved small object detection
 NO oversampling/undersampling - uses weighted loss only
 """
 from ultralytics import YOLO
@@ -8,14 +9,14 @@ import torch
 import yaml
 from pathlib import Path
 import os
+import argparse
 
-# Configuration
-CONFIG_PATH = '/home/talha/bitirmeprojesi/yolov8_config.yaml'
-MODEL_SIZE = 'yolov8x.pt'  # 80GB VRAM allows largest model: yolov8x
-EPOCHS = 300  # More epochs for better convergence with large model
-BATCH_SIZE = 32  # Optimized for memory efficiency with large image size
-IMG_SIZE = 896  # Balanced size: better than 640, more memory efficient than 1280
-DEVICE = 0  # GPU index, or 'cpu'
+# Default Configuration
+DEFAULT_CONFIG_PATH = '/home/ilaha/bitirmeprojesi/yolov8_config.yaml'
+DEFAULT_EPOCHS = 300
+DEFAULT_BATCH_SIZE = 32
+DEFAULT_IMG_SIZE = 896
+DEFAULT_DEVICE = 0
 
 # Class weights (inverse frequency based on analysis)
 # Calculated from total training data distribution
@@ -26,17 +27,28 @@ CLASS_WEIGHTS = [
     1.206   # Helicopter (2074 instances - least common, highest weight)
 ]
 
-def check_gpu():
-    """Check GPU availability and print info"""
-    if torch.cuda.is_available():
-        gpu_name = torch.cuda.get_device_name(0)
-        gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1024**3
+def check_gpu(device=0):
+    """Check GPU availability and print info
+    
+    Args:
+        device: GPU device index (or -1 for CPU)
+    
+    Returns:
+        tuple: (has_gpu, gpu_memory_gb)
+    """
+    if device == -1 or not torch.cuda.is_available():
+        print("⚠ Using CPU (will be slow!)")
+        return False, 0
+    
+    try:
+        gpu_name = torch.cuda.get_device_name(device)
+        gpu_memory = torch.cuda.get_device_properties(device).total_memory / 1024**3
         print(f"GPU Available: {gpu_name}")
         print(f"GPU Memory: {gpu_memory:.2f} GB")
-        return True
-    else:
-        print("⚠ No GPU available, using CPU (will be slow!)")
-        return False
+        return True, gpu_memory
+    except (RuntimeError, AssertionError):
+        print(f"⚠ GPU device {device} not available, falling back to CPU")
+        return False, 0
 
 def get_recommended_batch_size(gpu_memory_gb):
     """Recommend batch size based on GPU memory"""
@@ -49,44 +61,89 @@ def get_recommended_batch_size(gpu_memory_gb):
     else:
         return 4
 
-def train_yolov8():
+def parse_args():
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(
+        description='YOLOv8 Training Script with Optional P2 Head Support',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    
+    # Model architecture
+    parser.add_argument('--p2head', action='store_true',
+                        help='Use P2 head for improved small object detection (4-head: P2/P3/P4/P5)')
+    
+    # Training parameters
+    parser.add_argument('--epochs', type=int, default=DEFAULT_EPOCHS,
+                        help='Number of training epochs')
+    parser.add_argument('--batch', type=int, default=None,
+                        help='Batch size (auto-adjusted for P2 if not specified)')
+    parser.add_argument('--imgsz', type=int, default=DEFAULT_IMG_SIZE,
+                        help='Input image size')
+    parser.add_argument('--device', type=int, default=DEFAULT_DEVICE,
+                        help='GPU device index (or -1 for CPU)')
+    
+    # Data configuration
+    parser.add_argument('--data', type=str, default=DEFAULT_CONFIG_PATH,
+                        help='Path to dataset YAML config')
+    
+    return parser.parse_args()
+
+def train_yolov8(args):
     """Train YOLOv8 with weighted loss"""
+    # Determine model and batch size based on P2 head flag
+    if args.p2head:
+        # Use custom P2 YAML configuration
+        model_name = '/home/ilaha/bitirmeprojesi/yolov8x-p2-custom.yaml'
+        # Reduce batch size for P2 head due to higher memory usage
+        batch_size = args.batch if args.batch is not None else max(16, DEFAULT_BATCH_SIZE - 8)
+        project_name = 'train_p2'
+        arch_type = 'P2 HEAD (4-head: P2/P3/P4/P5)'
+    else:
+        model_name = 'yolov8x.pt'
+        batch_size = args.batch if args.batch is not None else DEFAULT_BATCH_SIZE
+        project_name = 'train'
+        arch_type = 'BASELINE (3-head: P3/P4/P5)'
+    
     print("="*80)
-    print("YOLOv8 BASELINE TRAINING - WEIGHTED LOSS")
+    print(f"YOLOv8 TRAINING - {arch_type}")
     print("="*80)
-    print(f"\nModel: {MODEL_SIZE}")
-    print(f"Epochs: {EPOCHS}")
-    print(f"Batch Size: {BATCH_SIZE}")
-    print(f"Image Size: {IMG_SIZE}")
+    print(f"\nModel: {model_name}")
+    print(f"Epochs: {args.epochs}")
+    print(f"Batch Size: {batch_size}")
+    print(f"Image Size: {args.imgsz}")
     print(f"Class Weights: {CLASS_WEIGHTS}")
-    print(f"Device: {'GPU' if DEVICE != 'cpu' else 'CPU'}")
+    print(f"Device: {'GPU' if args.device >= 0 else 'CPU'}")
+    if args.p2head:
+        print(f"\n⚡ P2 Head Enabled: Higher resolution detection for small objects")
+        print(f"   Feature map scales: 4x, 8x, 16x, 32x (vs baseline 8x, 16x, 32x)")
     
     # Check GPU
-    has_gpu = check_gpu()
-    if has_gpu and DEVICE == 0:
-        gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1024**3
+    has_gpu, gpu_memory = check_gpu(args.device)
+    if has_gpu:
         recommended_batch = get_recommended_batch_size(gpu_memory)
-        if recommended_batch != BATCH_SIZE:
+        if args.p2head:
+            recommended_batch = max(16, recommended_batch - 8)  # Adjust for P2 memory overhead
+        if recommended_batch != batch_size:
             print(f"\n💡 Recommended batch size for your GPU: {recommended_batch}")
-            print(f"   Current batch size: {BATCH_SIZE}")
+            print(f"   Current batch size: {batch_size}")
     
     # Load model
-    print(f"\nLoading model: {MODEL_SIZE}")
-    model = YOLO(MODEL_SIZE)
+    print(f"\nLoading model: {model_name}")
+    model = YOLO(model_name)
     
     # Training configuration
     print("\nStarting training...")
-    print("Training progress will be saved to: runs/detect/train")
+    print(f"Training progress will be saved to: runs/detect/{project_name}")
     
     results = model.train(
         # Data configuration
-        data=CONFIG_PATH,
+        data=args.data,
         
         # Training parameters
-        epochs=EPOCHS,
-        batch=BATCH_SIZE,
-        imgsz=IMG_SIZE,
-        device=DEVICE,
+        epochs=args.epochs,
+        batch=batch_size,
+        imgsz=args.imgsz,
+        device=args.device,
         
         # NOTE: cls_pw (class weighting) removed - not supported in current Ultralytics version
         # Alternative: Use data augmentation or custom callback for handling class imbalance
@@ -122,7 +179,7 @@ def train_yolov8():
         workers=8,       # Reduced workers to save memory
         cache='disk',    # Use disk cache instead of RAM to save VRAM
         project='runs/detect',
-        name='train',
+        name=project_name,
         exist_ok=False,
         pretrained=True,
         verbose=True,
@@ -158,7 +215,7 @@ def train_yolov8():
     print(f"   tensorboard --logdir {save_dir.parent}")
     print("\n2. Validate on test set:")
     print(f"   python -m ultralytics.yolo val model={save_dir / 'weights' / 'best.pt'} \\")
-    print(f"          data={CONFIG_PATH} split=test")
+    print(f"          data={args.data} split=test")
     print("\n3. Run inference:")
     print(f"   python -m ultralytics.yolo predict model={save_dir / 'weights' / 'best.pt'} \\")
     print("          source=path/to/images")
@@ -167,14 +224,17 @@ def train_yolov8():
 
 def main():
     """Main execution"""
+    # Parse arguments
+    args = parse_args()
+    
     # Check if config exists
-    if not os.path.exists(CONFIG_PATH):
-        print(f"❌ Error: Config file not found: {CONFIG_PATH}")
+    if not os.path.exists(args.data):
+        print(f"❌ Error: Config file not found: {args.data}")
         print("Please run prepare_unified_dataset.py first!")
         return
     
     # Load and verify config
-    with open(CONFIG_PATH, 'r') as f:
+    with open(args.data, 'r') as f:
         config = yaml.safe_load(f)
     
     print("\nDataset Configuration:")
@@ -195,7 +255,7 @@ def main():
             print(f"⚠ Warning: {split} split not found: {split_path}")
     
     # Start training
-    results = train_yolov8()
+    results = train_yolov8(args)
     
     return results
 

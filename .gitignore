@@ -11,9 +11,6 @@ env/
 dist/
 build/
 
-# YOLOv8 Training outputs
-runs/
-wandb/
 
 # Dataset (too large for git)
 datasets/
