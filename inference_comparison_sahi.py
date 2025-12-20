@@ -34,8 +34,8 @@ def parse_args():
                         default='runs/detect/train/weights/best.pt',
                         help='Path to baseline model weights')
     parser.add_argument('--p2h-model', type=str, 
-                        default='runs/detect/train_p2/weights/best.pt',
-                        help='Path to P2H model weights')
+                        default='runs/detect/p2h_fair/weights/best.pt',
+                        help='Path to P2H model weights (trained with fair comparison)')
     
     # Inference parameters
     parser.add_argument('--conf', type=float, default=0.3,
@@ -43,15 +43,15 @@ def parse_args():
     parser.add_argument('--device', type=str, default='cuda:0',
                         help='Device (cuda:0 or cpu)')
     
-    # SAHI parameters
-    parser.add_argument('--slice-height', type=int, default=512,
-                        help='Slice height in pixels')
-    parser.add_argument('--slice-width', type=int, default=512,
-                        help='Slice width in pixels')
-    parser.add_argument('--overlap-height', type=float, default=0.2,
-                        help='Overlap ratio for height')
-    parser.add_argument('--overlap-width', type=float, default=0.2,
-                        help='Overlap ratio for width')
+    # SAHI parameters (optimized for 896x896 training)
+    parser.add_argument('--slice-height', type=int, default=640,
+                        help='Slice height in pixels (0.7x training size)')
+    parser.add_argument('--slice-width', type=int, default=640,
+                        help='Slice width in pixels (0.7x training size)')
+    parser.add_argument('--overlap-height', type=float, default=0.3,
+                        help='Overlap ratio for height (0.3 better for small objects)')
+    parser.add_argument('--overlap-width', type=float, default=0.3,
+                        help='Overlap ratio for width (0.3 better for small objects)')
     
     # Input/Output
     parser.add_argument('--source', type=str, required=True,

@@ -1,0 +1,47 @@
+[
+  {
+    "model_type": "baseline",
+    "batch_size": 16,
+    "epochs": 20,
+    "learning_rate": 0.0005,
+    "final_map50": 0.80754,
+    "final_map50_95": 0.50841,
+    "final_train_loss": 0.47701,
+    "final_val_loss": 2.31426,
+    "training_time_min": 36.56108510891597,
+    "time_per_epoch_sec": 109.6832553267479,
+    "results_dir": "runs/detect/train",
+    "map_improvement": 0.34193,
+    "improvement_rate": 0.022795333333333334
+  },
+  {
+    "model_type": "baseline",
+    "batch_size": 24,
+    "epochs": 20,
+    "learning_rate": 0.00075,
+    "final_map50": 0.80754,
+    "final_map50_95": 0.50841,
+    "final_train_loss": 0.47701,
+    "final_val_loss": 2.31426,
+    "training_time_min": 35.23788279692332,
+    "time_per_epoch_sec": 105.71364839076996,
+    "results_dir": "runs/detect/train",
+    "map_improvement": 0.34193,
+    "improvement_rate": 0.022795333333333334
+  },
+  {
+    "model_type": "baseline",
+    "batch_size": 32,
+    "epochs": 20,
+    "learning_rate": 0.001,
+    "final_map50": 0.80754,
+    "final_map50_95": 0.50841,
+    "final_train_loss": 0.47701,
+    "final_val_loss": 2.31426,
+    "training_time_min": 34.64367198149363,
+    "time_per_epoch_sec": 103.93101594448089,
+    "results_dir": "runs/detect/train",
+    "map_improvement": 0.34193,
+    "improvement_rate": 0.022795333333333334
+  }
+]
